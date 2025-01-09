@@ -1,0 +1,23 @@
+{
+  "name": "backend-practice",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Rao-Waleed-Nadeem/StreamNest#readme",
+  "bugs": {
+    "url": "https://github.com/Rao-Waleed-Nadeem/StreamNest/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rao-Waleed-Nadeem/StreamNest.git"
+  },
+  "license": "ISC",
+  "author": "Rao Waleed",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "prettier": "^3.4.2"
+  }
+}
