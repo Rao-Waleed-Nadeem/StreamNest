@@ -1,5 +1,5 @@
 const asyncHandler = (requestHandler) => {
-  async (req, res, next) => {
+  return async (req, res, next) => {
     try {
       await requestHandler(req, res, next);
     } catch (err) {
@@ -11,4 +11,4 @@ const asyncHandler = (requestHandler) => {
   };
 };
 
-export default asyncHandler;
+export { asyncHandler };
