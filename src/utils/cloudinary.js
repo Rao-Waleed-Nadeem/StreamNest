@@ -25,4 +25,40 @@ const uploadOnCloudinary = async function (localFilePath) {
   }
 };
 
-export { uploadOnCloudinary };
+const deleteImageFromCloudinary = async function (localFilePath) {
+  try {
+    if (!localFilePath) {
+      console.log("Deleting file is empty");
+      return null;
+    }
+    const response = await cloudinary.uploader.destroy(localFilePath, {
+      resource_type: "image",
+    });
+    return response;
+  } catch (err) {
+    console.log("Error in Deleting file: ", localFilePath);
+    return null;
+  }
+};
+
+const deleteVideoFromCloudinary = async function (localFilePath) {
+  try {
+    if (!localFilePath) {
+      console.log("Deleting file is empty");
+      return null;
+    }
+    const response = await cloudinary.uploader.destroy(localFilePath, {
+      resource_type: "video",
+    });
+    return response;
+  } catch (err) {
+    console.log("Error in Deleting file: ", localFilePath);
+    return null;
+  }
+};
+
+export {
+  uploadOnCloudinary,
+  deleteImageFromCloudinary,
+  deleteVideoFromCloudinary,
+};

@@ -1,7 +1,10 @@
 import { promiseHandler } from "../utils/promiseHandler.js";
 import { User } from "../models/user.model.js";
 import { apiError } from "../utils/apiError.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteImageFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
@@ -52,7 +55,7 @@ const registerUser = promiseHandler(async (req, res) => {
     throw new apiError(409, "User with this email or username already exists");
   }
 
-  console.log("req.files: ", req.files);
+  // console.log("req.files.avatar: ", req.files.avatar);
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
   let coverImageLocalPath;
@@ -68,6 +71,8 @@ const registerUser = promiseHandler(async (req, res) => {
   }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  console.log("avatar after uploaded on cloudinary: ", avatar);
 
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
@@ -92,7 +97,9 @@ const registerUser = promiseHandler(async (req, res) => {
     throw new apiError(500, "Error while registering user");
   }
 
-  res
+  req.user = createdUser;
+
+  return res
     .status(201)
     .json(new apiResponse(200, createdUser, "User registered Successfully"));
 });
@@ -228,7 +235,7 @@ const changeCurrentPassword = promiseHandler(async (req, res) => {
   if (!isCorrectPassword) {
     throw new apiError(404, "Wrong password");
   }
-  user.password = password;
+  user.password = newPassword;
   ServiceWorker.save({ validateBeforeSave: false });
   return res
     .status(200)
@@ -258,7 +265,7 @@ const updateAccountDetails = promiseHandler(async (req, res) => {
     {
       new: true,
     }
-  ).select("-password");
+  ).select("-password -refreshToken"); //Mene khud ye refreshToken dala h
 
   return res
     .status(200)
@@ -280,7 +287,23 @@ const updateUserAvatar = promiseHandler(async (req, res) => {
     throw new apiError(400, "Error while uploading avatar");
   }
 
-  // fs.unlinkSync(avatarLocalPathTemp);
+  console.log("url of deleting image ", req.user.avatar);
+
+  const urlParts = req.user.avatar.split("/");
+  const publicIdWithExtension = urlParts[urlParts.length - 1];
+  const publicId = publicIdWithExtension.split(".")[0];
+
+  const result = await deleteImageFromCloudinary(
+    publicId,
+    function (err, result) {
+      if (err) {
+        throw new apiError(404, "Error deleting image");
+      }
+      console.log("Deleted image successfully", result);
+    }
+  );
+
+  console.log("result of deletion of avatar ", result);
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -311,7 +334,25 @@ const updateUserCoverImage = promiseHandler(async (req, res) => {
     throw new apiError(400, "Error while uploading cover image");
   }
 
-  fs.unlinkSync(coverImageLocalPath);
+  const tempUser = await User.findById(req.user?._id);
+
+  console.log("url of deleting image (cover image):", tempUser.coverImage);
+
+  const urlParts = tempUser.coverImage.split("/");
+  const publicIdWithExtension = urlParts[urlParts.length - 1];
+  const publicId = publicIdWithExtension.split(".")[0];
+
+  const result = await deleteImageFromCloudinary(
+    publicId,
+    function (err, result) {
+      if (err) {
+        throw new apiError(404, "Error deleting image");
+      }
+      console.log("Deleted image successfully", result);
+    }
+  );
+
+  console.log("result of deletion of avatar ", result);
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -438,7 +479,7 @@ const getWatchHistory = promiseHandler(async (req, res) => {
           {
             $addFields: {
               owner: {
-                $first: "owner",
+                $first: "$owner",
               },
             },
           },
