@@ -11,12 +11,12 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     throw new apiError(400, "Video ID is required");
   }
 
-  const like = await Like.findOne({ likedBy: req.user?._id });
+  let likes = await Like.findOne({ likedBy: req.user?._id });
 
-  if (!like) {
+  if (!likes || likes.length === 0) {
     // Create a new like entry
     const newLike = await Like.create({
-      video: [videoId],
+      video: videoId,
       likedBy: req.user?._id,
     });
 
@@ -25,59 +25,63 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
       .json(new apiResponse(200, newLike, "Video liked successfully"));
   }
 
-  // Toggle like on existing entry
-  if (like.video?.includes(videoId)) {
-    // Unlike the video
-    like.video = like.video.filter((id) => id !== videoId);
+  if (likes.video.includes(videoId)) {
+    // Video ID exists, remove it
+    likes.video = likes.video.filter((id) => id.toString() !== videoId); // Remove video ID
+    // Remove the object if both video and comment are empty
   } else {
-    // Like the video
-    like.video = videoId;
+    // Video ID does not exist, add a new object with the video ID
+    likes.video.push(videoId);
   }
 
-  await like.save({ validateBeforeSave: false });
+  if (!likes) {
+    return res.status(201).json(new apiResponse(200, {}, "Null liked"));
+  }
+
+  await likes.save({ validateBeforeSave: false });
 
   return res
     .status(200)
-    .json(new apiResponse(200, like, "Video like toggled successfully"));
+    .json(new apiResponse(200, likes, "Video like toggled successfully"));
 });
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
-
+  console.log("hello");
   if (!commentId) {
     throw new apiError(400, "Comment ID is required");
   }
 
-  const like = await Like.findOne({
-    likedBy: req.user?._id,
-  });
+  let comments = await Like.findOne({ likedBy: req.user?._id });
 
-  if (!like) {
+  if (!comments || comments.length === 0) {
     // Create a new like entry
-    const newLike = await Like.create({
-      comment: [commentId],
+    const newComment = await Like.create({
+      comment: commentId,
       likedBy: req.user?._id,
     });
 
     return res
       .status(201)
-      .json(new apiResponse(200, newLike, "Comment liked successfully"));
+      .json(new apiResponse(200, newComment, "Comment liked successfully"));
   }
 
-  // Toggle like on existing entry
-  if (like.comment?.includes(commentId)) {
-    // Unlike the video
-    like.comment = like.comment.filter((id) => id !== commentId);
+  if (comments.comment.includes(commentId)) {
+    // Video ID exists, remove it
+    comments.comment = comments.comment.filter(
+      (id) => id.toString() !== commentId
+    ); // Remove video ID
+    // Remove the object if both video and comment are empty
   } else {
-    // Like the video
-    like.comment = commentId;
+    // Video ID does not exist, add a new object with the video ID
+    comments.comment.push(commentId);
   }
 
-  await like.save({ validateBeforeSave: false });
+  await comments.save({ validateBeforeSave: false });
 
   return res
     .status(200)
-    .json(new apiResponse(200, like, "Comment like toggled successfully"));
+    .json(new apiResponse(200, comments, "Comment like toggled successfully"));
 });
 
 const getLikedVideos = asyncHandler(async (req, res) => {
@@ -148,11 +152,35 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     },
   ]);
 
-  console.log("videos: ", videos);
+  // console.log("videos: ", videos);
 
   return res
     .status(200)
     .json(new apiResponse(200, videos, "Like videos fetched successfully"));
 });
 
-export { toggleCommentLike, toggleVideoLike, getLikedVideos };
+const checkLike = asyncHandler(async (req, res) => {
+  const { videoId, userId } = req.params;
+
+  if (!userId) {
+    throw new apiError(400, "User id is required to check video like");
+  }
+
+  if (!videoId) {
+    throw new apiError(400, "Video id is required to check like on video");
+  }
+
+  const like = await Like.findOne({ video: videoId, likedBy: userId });
+
+  return res
+    .status(201)
+    .json(
+      new apiResponse(
+        200,
+        like ? true : false,
+        "Checked user like successfully"
+      )
+    );
+});
+
+export { toggleCommentLike, toggleVideoLike, getLikedVideos, checkLike };

@@ -28,9 +28,12 @@ const userSchema = new Schema(
       type: String,
       required: [true, "Password is Required"],
     },
+    googleUser: {
+      type: Boolean,
+      required: [true, "isGoogle is Required"],
+    },
     avatar: {
       type: String, //cloudinary url
-      required: true,
     },
     coverImage: {
       type: String, //cloudinaryImage

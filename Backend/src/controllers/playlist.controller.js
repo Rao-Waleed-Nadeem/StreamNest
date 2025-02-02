@@ -100,11 +100,44 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 const getPlaylistById = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
 
+  console.log("playlistId: ", playlistId);
+
   if (!playlistId) {
     throw new apiError(400, "Playlist id is necessary for getting playlist");
   }
 
-  const playlist = await Playlist.findById(playlistId);
+  const playlist = await Playlist.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(playlistId),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "videos",
+        foreignField: "_id",
+        as: "videos",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
 
   if (!playlist) {
     throw new apiError(400, "Not found such playlist");
@@ -112,7 +145,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new apiResponse(200, playlist, "Playlist fetched successfully"));
+    .json(new apiResponse(200, playlist[0], "Playlist fetched successfully"));
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
@@ -127,13 +160,15 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 
   const playlist = await Playlist.findById(playlistId);
 
-  if (!playlist.videos || playlist.videos.length === 0) {
-    playlist.videos = videoId;
-  } else {
-    if (!playlist.videos.includes(videoId)) {
-      playlist.videos.push(videoId);
-    }
+  // console.log("playlist: ", playlistId);
+
+  // if (!playlist.videos || playlist.videos.length === 0) {
+  //   playlist.videos = [videoId];
+  // } else {
+  if (!playlist.videos.includes(videoId)) {
+    playlist.videos.push(videoId);
   }
+  // }
   await playlist.save({ saveBeforeValidation: false });
 
   return res
@@ -166,14 +201,12 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   }
 
   if (playlist.videos.includes(videoId)) {
-    playlist.videos = playlist.videos.filter((id) => id === videoId);
-  } else {
-    return res
-      .status(400)
-      .json(new apiResponse(400, null, "Video not found in playlist"));
+    playlist.videos = playlist.videos.filter(
+      (id) => id.toString() !== videoId.toString()
+    );
   }
 
-  await playlist.save(); // Removed the 'saveBeforeValidation' flag unless it's specifically required
+  await playlist.save({ validateBeforeSave: false }); // Removed the 'saveBeforeValidation' flag unless it's specifically required
 
   return res
     .status(200)

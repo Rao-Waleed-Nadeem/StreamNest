@@ -9,20 +9,20 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
 
   if (channelId == req.user?._id) {
-    throw new apiError(400, "Same user can't subscribed to his channel");
+    throw new apiError(400, "You cannot subscribe to your own channel.");
   }
 
   if (!channelId) {
     throw new apiError(400, "Channel ID is required for subscription.");
   }
 
-  // Check if a subscription exists for this channel
+  // Find the subscription for this channel
   let subscription = await Subscription.findOne({ channel: channelId });
 
   if (!subscription) {
     // Create a new subscription if none exists
     const newSubscription = await Subscription.create({
-      channel: channelId,
+      channel: channelId, // Store as a single value, not an array
       subscriber: [req.user?._id], // Initialize subscriber as an array
     });
 
@@ -38,13 +38,17 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   }
 
   // Check if the user is already subscribed
-  if (subscription.subscriber.includes(req.user?._id)) {
+  const isSubscribed = subscription.subscriber.some(
+    (id) => id.toString() === req.user?._id.toString()
+  );
+
+  if (isSubscribed) {
     // Unsubscribe the user
     subscription.subscriber = subscription.subscriber.filter(
-      (id) => id === req.user?._id
+      (id) => id.toString() !== req.user?._id.toString()
     );
 
-    subscription.save({ validateBeforeSave: false });
+    await subscription.save({ validateBeforeSave: false });
 
     return res
       .status(200)
@@ -52,13 +56,13 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         new apiResponse(
           200,
           subscription,
-          "Unsubscribed and subscription removed."
+          "Unsubscribed from channel successfully."
         )
       );
-  } else {
-    // Add the user to the subscriber list
-    subscription.subscriber.push(req.user?._id);
   }
+
+  // Add the user to the subscriber list
+  subscription.subscriber.push(req.user?._id);
 
   // Save the updated subscription
   await subscription.save({ validateBeforeSave: false });
