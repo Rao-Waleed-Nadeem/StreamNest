@@ -115,14 +115,14 @@ const ChannelSettings = () => {
           <input
             type="file"
             accept="image/*"
-            className="px-4 py-2 text-gray-200 rounded-md shadow cursor-pointer bg-violet-800 hover:bg-violet-900"
+            className="px-4 py-2 mx-2 text-gray-200 rounded-md shadow cursor-pointer max-w-44 bg-violet-800 hover:bg-violet-900"
             id="coverImage"
             name="coverImage"
             onChange={(e) => setCoverImage(e.target.files[0])}
           />
           <button
             onClick={handleUpdateCoverImage}
-            className="px-4 py-2 text-gray-200 rounded-md shadow cursor-pointer bg-violet-800 hover:bg-violet-900"
+            className="px-4 py-2 mx-3 text-gray-200 rounded-md shadow cursor-pointer bg-violet-800 hover:bg-violet-900"
           >
             Update Cover Image
           </button>
@@ -138,11 +138,14 @@ const ChannelSettings = () => {
             className="object-cover w-full h-full"
           />
         </div>
-        <form className="ml-32 md:ml-40" encType="multipart/form-data">
+        <form
+          className="flex flex-col ml-32 md:ml-40 land:flex-row "
+          encType="multipart/form-data"
+        >
           <input
             type="file"
             accept="image/*"
-            className="px-4 py-2 mt-2 text-gray-200 rounded-md shadow cursor-pointer bg-btnPrimary hover:bg-btnDark"
+            className="px-4 py-2 mx-2 mt-2 text-gray-200 rounded-md shadow cursor-pointer max-w-60 bg-btnPrimary hover:bg-btnDark"
             id="avatar"
             name="avatar"
             onChange={(e) => setProfileImage(e.target.files[0])}
@@ -150,7 +153,7 @@ const ChannelSettings = () => {
           <label
             htmlFor="profileImageInput"
             onClick={handleUpdateProfileImage}
-            className="px-4 py-2 mt-2 text-gray-200 rounded-md shadow cursor-pointer bg-btnPrimary hover:bg-btnDark"
+            className="px-4 py-2 mx-2 mt-2 text-gray-200 rounded-md shadow cursor-pointer land:py-3 max-w-48 bg-btnPrimary hover:bg-btnDark"
           >
             Update Profile Picture
           </label>

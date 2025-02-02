@@ -52,7 +52,7 @@ function Main() {
           <div
             key={index}
             onClick={() => handleNavigate(vid)}
-            className="overflow-hidden rounded-lg shadow-md bg-youLight"
+            className="overflow-hidden transition rounded-lg shadow-md cursor-pointer hover:scale-105 bg-youLight"
           >
             {/* Thumbnail */}
             <button className="w-full aspect-video">
@@ -64,7 +64,7 @@ function Main() {
             </button>
 
             {/* Video Details */}
-            <div className="flex p-4">
+            <div className="flex p-3">
               {/* Channel Avatar - Stop Propagation Here */}
               <button
                 onClick={(e) => {

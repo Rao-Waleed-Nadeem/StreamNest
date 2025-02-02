@@ -16,6 +16,7 @@ const rootReducer = combineReducers({
   playlists: videoReducer,
   accessToken: tokenReducer,
   userVideos: videoReducer,
+  loading: videoReducer,
 });
 
 // Configure persistence

@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { timeAgo } from "../../utils/timeAgo";
+import {
+  addView,
+  fetchVideo,
+  toggleSubscribe,
+  toggleSubscribeChannel,
+} from "../../video.store/videoThunk";
+import { useNavigate, useParams } from "react-router-dom";
 
 const channel = {
   name: "Tech Guru",
@@ -38,19 +45,44 @@ const channel = {
 };
 
 const ChannelPage = () => {
+  const { userId } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("videos");
   const user = useSelector((state) => state.user?.user);
   const userDetails = useSelector((state) => state.userDetails.userDetails);
   const [isSubscribed, setIsSubscribed] = useState(
     user && userDetails.subscribers.subscriber?.includes(user?._id)
   );
+  const [subs, setSubs] = useState(
+    userDetails?.subscribers?.subscriber?.length || 0
+  );
 
   console.log("userDetails: ", userDetails);
 
-  const handleSubscribe = () => {};
+  const handleSubscribe = async () => {
+    if (!isSubscribed) {
+      setSubs((prev) => prev + 1);
+    } else {
+      setSubs((prev) => prev - 1);
+    }
+    setIsSubscribed((prev) => !prev);
+    await dispatch(toggleSubscribeChannel(userDetails?._id));
+    // dispatch(fetchVideo(video_id));
+  };
+
+  const handleNavigate = async (vid) => {
+    console.log("vid: ", vid);
+    if (!vid?.views?.includes(user?._id))
+      await dispatch(addView(vid?._id, user?._id));
+    // await dispatch(fetchComments(vid._id));
+    await dispatch(fetchVideo(vid._id));
+
+    navigate(`/home/${vid?._id}`);
+  };
 
   return (
-    <div className="min-h-screen pt-2 mt-16 text-white bg-youDark">
+    <div className="min-h-screen pt-2 mx-auto mt-16 overflow-hidden text-white max-w-screen bg-youDark">
       {/* Cover Image */}
       <div className="relative w-full h-60 md:h-72">
         <img
@@ -73,23 +105,23 @@ const ChannelPage = () => {
             <h1 className="text-2xl font-bold md:text-3xl">
               {userDetails.fullName}
             </h1>
-            <p className="text-gray-400">
-              {userDetails.subscribers.subscriber?.length} subscribers
-            </p>
+            <p className="text-gray-400">{subs} subscribers</p>
           </div>
         </div>
-        <button
-          onClick={handleSubscribe}
-          className={`!rounded-button border ${
-            isSubscribed ? "bg-youDark text-white" : "bg-white"
-          } rounded-3xl bg-custom text-black max-h-10 mt-24 mr-3  px-4 font-semibold text-sm tab:px-6 py-2`}
-        >
-          {isSubscribed ? "Subscribed" : "Subscribe"}
-        </button>
+        {userId !== user?._id && (
+          <button
+            onClick={handleSubscribe}
+            className={`!rounded-button border ${
+              isSubscribed ? "bg-youDark text-white" : "bg-white"
+            } rounded-3xl bg-custom text-black max-h-10 mt-24 mr-3  px-4 font-semibold text-sm tab:px-6 py-2`}
+          >
+            {isSubscribed ? "Subscribed" : "Subscribe"}
+          </button>
+        )}
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex px-8 border-b border-gray-600">
+      <div className="flex px-8 overflow-x-auto border-b border-gray-600">
         <button
           className={`p-3 text-lg font-medium transition-all duration-300 ${
             activeTab === "videos"
@@ -113,9 +145,9 @@ const ChannelPage = () => {
       </div>
 
       {/* Content Section with Simple Transition */}
-      <div className="relative w-full overflow-hidden p-6 md:p-10 h-[300px]">
+      <div className="relative w-full h-full p-6 md:p-10">
         <div
-          className={`absolute inset-0 transition-all duration-300 ${
+          className={`transition-all duration-300 ${
             activeTab === "videos"
               ? "translate-x-0 opacity-100 visible"
               : "-translate-x-full opacity-0 invisible"
@@ -125,8 +157,9 @@ const ChannelPage = () => {
             {userDetails.videos.length > 0 ? (
               userDetails.videos.map((video) => (
                 <div
+                  onClick={() => handleNavigate(video)}
                   key={video._id}
-                  className="overflow-hidden transition rounded-lg shadow-md bg-youLight hover:scale-105"
+                  className="overflow-hidden transition rounded-lg shadow-md cursor-pointer bg-youLight hover:scale-105"
                 >
                   <img
                     src={video.thumbnail}
@@ -152,7 +185,7 @@ const ChannelPage = () => {
         </div>
 
         <div
-          className={`absolute inset-0 transition-all duration-300 ${
+          className={` transition-all duration-300 ${
             activeTab === "playlists"
               ? "translate-x-0 opacity-100 visible"
               : "translate-x-full opacity-0 invisible"

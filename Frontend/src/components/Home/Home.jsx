@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { IoMdShareAlt } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   addView,
   fetchComments,
@@ -11,6 +11,7 @@ import {
   toggleCommentLike,
   fetchVideo,
   toggleSubscribe,
+  fetchVideos,
 } from "../../video.store/videoThunk";
 import { timeAgo } from "../../utils/timeAgo";
 import { numberFormat } from "../../utils/numberFormat";
@@ -18,8 +19,10 @@ import { addHistory } from "../../user.store/userThunk";
 
 function Home() {
   const { video_id } = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const video = useSelector((state) => state.video.video);
+  const videos = useSelector((state) => state.videos.videos);
   const user = useSelector((state) => state.user.user);
   const comments = useSelector((state) => state?.comments?.comments);
   const [liked, setLiked] = useState(false);
@@ -30,6 +33,7 @@ function Home() {
     video?.subscribers?.subscriber?.includes(user?._id) ? true : false
   );
   const [subs, setSubs] = useState(video?.subscribers?.subscriber?.length || 0);
+  const [shuffledVideos, setShuffledVideos] = useState([]);
 
   const handleChange = (e) => {
     setComment(e.target.value);
@@ -52,11 +56,24 @@ function Home() {
       // dispatch(fetchComments(video_id));
       // dispatch(checkLike(video_id, user?._id, setLiked));
       dispatch(addHistory(video_id));
+      // dispatch(fetchVideos());
       // dispatch(fetchVideo(video_id));
     };
 
     handleViewUpdate();
   }, []); // Ensure it runs only when needed
+
+  useEffect(() => {}, [navigate, setShuffledVideos]); // Runs only on mount
+
+  const getShuffle = () => {
+    setShuffledVideos([...videos].sort(() => Math.random() - 0.5));
+  };
+
+  useEffect(() => {
+    getShuffle();
+  }, []);
+
+  // console.log("shuffled videos: ", shuffledVideos);
 
   const handleLike = () => {
     if (!user) return; // Ensure the user is logged in
@@ -86,10 +103,6 @@ function Home() {
     dispatch(toggleCommentLike(comments, comment, video_id));
   };
 
-  console.log("video: ", video);
-  console.log("user: ", user);
-  console.log("subs: ", subs);
-
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleToggle = () => {
@@ -107,6 +120,15 @@ function Home() {
     // dispatch(fetchVideo(video_id));
   };
 
+  const handleVideoNavigate = async (vid) => {
+    if (!vid?.views?.includes(user?._id))
+      await dispatch(addView(vid?._id, user?._id));
+    // await dispatch(fetchComments(vid._id));
+    await dispatch(fetchVideo(vid._id));
+    navigate(`/home/${vid?._id}`);
+    await getShuffle();
+  };
+
   return (
     <div className="static min-w-full text-white mt-14 tab:px-4 bg-youDark">
       <main className="px-4 py-6 mx-auto bg-youtube max-w-8xl ph:px-6 lap:px-8">
@@ -114,11 +136,19 @@ function Home() {
           <div className="lap:w-8/12">
             <div className="overflow-hidden bg-black rounded-lg aspect-video">
               <div className="relative w-full h-full">
-                <img
-                  src={video?.thumbnail || ""}
-                  alt="Video Thumbnail"
-                  className="object-cover w-full h-full"
-                />
+                {video?.videoFile ? (
+                  <video
+                    src={video.videoFile}
+                    className="object-cover w-full h-full"
+                    controls // Add controls for play/pause
+                  />
+                ) : (
+                  <img
+                    src={video?.thumbnail || ""}
+                    alt="Video Thumbnail"
+                    className="object-cover w-full h-full"
+                  />
+                )}
               </div>
             </div>
 
@@ -149,8 +179,9 @@ function Home() {
                   </div>
                   <button
                     onClick={handleSubscribe}
-                    className={`!rounded-button border ${
-                      isSubscribed ? "bg-youDark text-white" : "bg-white"
+                    disabled={video?.owner?._id === user?._id}
+                    className={`!rounded-button border disabled:cursor-not-allowed disabled:bg-white/50 disabled:border disabled:border-gray-400 ${
+                      isSubscribed ? "bg-youDark text-white" : "bg-white "
                     } rounded-3xl bg-custom text-black  px-4 font-semibold text-sm tab:px-6 py-2`}
                   >
                     {isSubscribed ? "Subscribed" : "Subscribe"}
@@ -158,10 +189,14 @@ function Home() {
                 </div>
 
                 <div className="flex flex-row items-center space-x-2">
-                  <button className="flex flex-row ">
+                  <button
+                    disabled={video?.owner?._id === user?._id}
+                    className="flex flex-row disabled:cursor-not-allowed"
+                  >
                     <button
                       onClick={handleLike}
-                      className="flex items-center px-6 py-2 text-sm font-semibold rounded-3xl bg-youBtn"
+                      disabled={video?.owner?._id === user?._id}
+                      className="flex items-center px-6 py-2 text-sm font-semibold disabled:cursor-not-allowed rounded-3xl bg-youBtn disabled:bg-youBtn/50"
                     >
                       <i className="mr-2 fas fa-thumbs-up">
                         <svg
@@ -183,7 +218,10 @@ function Home() {
                       {video.likes}
                     </button>
                   </button>
-                  <button className="flex px-3 py-2 space-x-2 text-sm font-semibold bg-youBtn min-w-20 rounded-3xl">
+                  <button
+                    disabled={video?.owner?._id === user?._id}
+                    className="flex px-3 py-2 space-x-2 text-sm font-semibold disabled:cursor-not-allowed bg-youBtn disabled:bg-youBtn/50 min-w-20 rounded-3xl"
+                  >
                     <IoMdShareAlt size={22} className="mr-1" />
                     Share
                   </button>
@@ -250,8 +288,9 @@ function Home() {
                       className="w-[85%] p-2 text-gray-100 bg-transparent border-b border-gray-600 focus:outline-none focus:border-custom"
                     />
                     <button
+                      disabled={video?.owner?._id === user?._id}
                       onClick={handleSubmit}
-                      className="px-3 py-2 space-x-2 text-sm bg-btnPrimary rounded-3xl"
+                      className="px-3 py-2 space-x-2 text-sm disabled:cursor-not-allowed bg-btnPrimary disabled:bg-btnPrimary/50 disabled:text-gray-200 rounded-3xl"
                     >
                       Comment
                     </button>
@@ -322,62 +361,33 @@ function Home() {
 
           <div className="lap:w-4/12">
             <div className="space-y-4">
-              <div className="flex items-start space-x-2">
-                <div className="flex-shrink-0 w-40 h-24 bg-gray-800 rounded-lg">
-                  <img
-                    src="https://i.pinimg.com/236x/44/c3/e2/44c3e202c972538399b153892236d11f.jpg"
-                    alt="Video thumbnail"
-                    className="object-cover w-full h-full rounded-lg"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-100 line-clamp-2">
-                    10 Advanced YouTube SEO Tips for 2024
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-400">Tech Insights</p>
-                  <p className="text-sm text-gray-400">
-                    458K views • 1 week ago
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-2">
-                <div className="flex-shrink-0 w-40 h-24 bg-gray-800 rounded-lg">
-                  <img
-                    src="https://i.pinimg.com/236x/55/04/a4/5504a4ff6bfe89c2f1c189e750255a3a.jpg"
-                    alt="Video thumbnail"
-                    className="object-cover w-full h-full rounded-lg"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-100 line-clamp-2">
-                    Video Editing MasterclassName: Pro Tips
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-400">Edit Pro</p>
-                  <p className="text-sm text-gray-400">
-                    125K views • 3 days ago
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-2">
-                <div className="flex-shrink-0 w-40 h-24 bg-gray-800 rounded-lg">
-                  <img
-                    src="https://i.pinimg.com/236x/42/34/a0/4234a09d822f38348ff5f98b793ced15.jpg"
-                    alt="Video thumbnail"
-                    className="object-cover w-full h-full rounded-lg"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-100 line-clamp-2">
-                    Best Camera Gear for YouTube 2024
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-400">Tech Review Hub</p>
-                  <p className="text-sm text-gray-400">
-                    89K views • 5 days ago
-                  </p>
-                </div>
-              </div>
+              {shuffledVideos?.map((video) => (
+                <button
+                  onClick={() => handleVideoNavigate(video)}
+                  key={video?._id}
+                  className="flex items-start space-x-2"
+                >
+                  <div className="flex-shrink-0 w-40 h-24 bg-gray-800 rounded-lg">
+                    <img
+                      src={video?.thumbnail}
+                      alt={video?.title}
+                      className="object-cover w-full h-full rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-100 line-clamp-2">
+                      {video.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-400">
+                      {video?.owner?.fullName}
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      {numberFormat(video?.views?.length)} views •{" "}
+                      {timeAgo(video?.createdAt)}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>

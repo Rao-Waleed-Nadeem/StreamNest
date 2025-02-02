@@ -3,6 +3,7 @@ import { setUser, setHistory, setUserDetails } from "./userSlice.js";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api.js";
 import { setAccessToken } from "../utils/tokenSlice.js";
+import { setLoading } from "../video.store/videoSlice.js";
 
 // Define an async thunk for user registration
 const registerUser = (formData) => async (dispatch) => {
@@ -19,6 +20,7 @@ const registerUser = (formData) => async (dispatch) => {
   console.log("data: ", data);
 
   try {
+    await dispatch(setLoading(true));
     const response = await axios.post(
       "http://localhost:8000/api/v1/users/register",
       data,
@@ -42,24 +44,31 @@ const registerUser = (formData) => async (dispatch) => {
       "Error registering user:",
       error.response ? error.response.data : error.message
     );
+  } finally {
+    dispatch(setLoading(false));
   }
 };
 
 const currentUser = () => async (dispatch) => {
   try {
+    await dispatch(setLoading(true));
     const response = await api.get("/users/current-user");
     await dispatch(setUser(response.data.data));
   } catch (err) {
-    dispatch(setUser(null));
+    await dispatch(setUser(null));
     console.log(
       "Error fetching user: ",
       err.response ? err.response.data : err.message
     );
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const resetUser = () => async (dispatch) => {
-  dispatch(setUser(null));
+  await dispatch(setLoading(true));
+  await dispatch(setUser(null));
+  await dispatch(setLoading(false));
 };
 
 const loginUser = (formData) => async (dispatch) => {
@@ -69,9 +78,10 @@ const loginUser = (formData) => async (dispatch) => {
     googleUser: false,
   };
 
-  console.log("data: ", formData);
+  // console.log("data: ", formData);
 
   try {
+    await dispatch(setLoading(true));
     const response = await api.post("/users/login", formData);
     localStorage.setItem("accessToken", response.data.data.accessToken);
     localStorage.setItem("refreshToken", response.data.data.refreshToken);
@@ -84,18 +94,14 @@ const loginUser = (formData) => async (dispatch) => {
       "Error in login user: ",
       err.response ? err.response.data : err.message
     );
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const logoutUser = (navigate, user) => async (dispatch) => {
   try {
-    // const token = localStorage.getItem("accessToken");
-    // if (!token) {
-    //   console.log("No token found, user might not be logged in");
-    //   return;
-    // }
-
-    console.log("user: ", user);
+    await dispatch(setLoading(true));
 
     const response = await api.post(
       "/users/logout",
@@ -118,6 +124,8 @@ const logoutUser = (navigate, user) => async (dispatch) => {
       "Error in logging out user: ",
       err.response ? err.response.data : err.message
     );
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
@@ -129,6 +137,7 @@ const googleLogin = (formData) => async (dispatch) => {
   data.append("avatar", formData.image);
 
   try {
+    await dispatch(setLoading(true));
     const response = await api.post("/users/google-login", data);
 
     // Dispatch the setUser action with the response data
@@ -139,22 +148,27 @@ const googleLogin = (formData) => async (dispatch) => {
       "Error registering user:",
       error.response ? error.response.data : error.message
     );
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const getUserDetails = (userId) => async (dispatch) => {
   try {
+    await dispatch(setLoading(true));
     const response = await api.get(`/users/get-user-details/${userId}`);
     // console.log("userDetails: ", response.data.data);
     await dispatch(setUserDetails(response.data.data));
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const updateAvatarImage = (profileImage) => async (dispatch) => {
   try {
-    // console.log("profile image: ", profileImage);
+    await dispatch(setLoading(true));
     const formData = new FormData();
     formData.append("avatar", profileImage);
     const response = await api.patch("/users/update-avatar", formData, {
@@ -165,12 +179,14 @@ const updateAvatarImage = (profileImage) => async (dispatch) => {
     console.log("response of avatar: ", response.data.data);
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const updateCoverImage = (coverImage) => async (dispatch) => {
   try {
-    // console.log("cover image: ", coverImage);
+    await dispatch(setLoading(true));
     const formData = new FormData();
     formData.append("coverImage", coverImage);
     const response = await api.patch("/users/update-cover-image", formData, {
@@ -178,15 +194,18 @@ const updateCoverImage = (coverImage) => async (dispatch) => {
         "Content-Type": "multipart/form-data",
       },
     });
-    console.log("response of coverImage: ", response.data.data);
+    // console.log("response of coverImage: ", response.data.data);
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const updateFullName = (fullName) => async (dispatch) => {
   try {
-    console.log("fullName: ", fullName);
+    await dispatch(setLoading(true));
+    // console.log("fullName: ", fullName);
     const response = await api.patch(
       "/users/update-account",
       { fullName },
@@ -197,36 +216,47 @@ const updateFullName = (fullName) => async (dispatch) => {
         withCredentials: true, // If using cookies for authentication
       }
     );
-    console.log("account updated: ", response.data.data);
+    // console.log("account updated: ", response.data.data);
+    await dispatch(getUserDetails(response.data.data._id));
+    // await dispatch(setUser(response.data.data));
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const deleteUserVideo = (videoId) => async (dispatch) => {
   try {
-    console.log("video Id: ", videoId);
+    await dispatch(setLoading(true));
+    // console.log("video Id: ", videoId);
     const response = await api.delete(`/videos/${videoId}`);
 
-    console.log("Deleted Video: ", response.data.data);
+    // console.log("Deleted Video: ", response.data.data);
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const addHistory = (videoId) => async (dispatch) => {
   try {
+    await dispatch(setLoading(true));
     const response = await api.patch(`/users/add-history/${videoId}`);
-
-    console.log("Added watch history: ", response.data.data);
+    // console.log("Added watch history: ", response.data.data);
     dispatch(fetchWatchHistory());
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const removeHistory = (videoId) => async (dispatch) => {
   try {
+    await dispatch(setLoading(true));
+
     const response = await api.patch(`/users/remove-history/${videoId}`);
 
     console.log("Remove history: ", response.data.data);
@@ -234,11 +264,14 @@ const removeHistory = (videoId) => async (dispatch) => {
     dispatch(fetchWatchHistory());
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const clearHistory = () => async (dispatch) => {
   try {
+    await dispatch(setLoading(true));
     const response = await api.patch("/users/clear-history");
 
     console.log("Clear history: ", response.data.data);
@@ -246,16 +279,21 @@ const clearHistory = () => async (dispatch) => {
     dispatch(fetchWatchHistory());
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
 const fetchWatchHistory = () => async (dispatch) => {
   try {
+    await dispatch(setLoading(true));
     const response = await api.get("/users/history");
     // console.log("All history: ", response.data.data);
     await dispatch(setHistory(response.data.data));
   } catch (err) {
     console.log("Error: ", err);
+  } finally {
+    await dispatch(setLoading(false));
   }
 };
 
