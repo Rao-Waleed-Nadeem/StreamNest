@@ -17,6 +17,13 @@ app.use(
   })
 );
 
+app.enableCors({
+  origin: "https://stream-nest-eight.vercel.app", // Allow frontend origin
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  allowedHeaders: "Content-Type, Authorization",
+  credentials: true, // Allow credentials if needed
+});
+
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
