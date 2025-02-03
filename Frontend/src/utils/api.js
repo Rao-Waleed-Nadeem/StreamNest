@@ -5,7 +5,7 @@ import { setAccessToken } from "./tokenSlice";
 
 const api = axios.create({
   withCredentials: true,
-  baseURL: "http://localhost:8000/api/v1",
+  baseURL: "https://stream-nest-backend.vercel.app/api/v1",
 });
 
 // ✅ Request Interceptor: Attach access token to every request
@@ -48,7 +48,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          "http://localhost:8000/api/v1/users/refresh-token",
+          "https://stream-nest-backend.vercel.app/api/v1/users/refresh-token",
           { refreshToken }, // Send refresh token in body
           {
             withCredentials: true,

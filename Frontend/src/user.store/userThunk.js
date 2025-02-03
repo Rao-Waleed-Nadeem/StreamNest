@@ -22,7 +22,7 @@ const registerUser = (formData) => async (dispatch) => {
   try {
     await dispatch(setLoading(true));
     const response = await axios.post(
-      "http://localhost:8000/api/v1/users/register",
+      "https://stream-nest-backend.vercel.app/api/v1/users/register",
       data,
       {
         headers: {
