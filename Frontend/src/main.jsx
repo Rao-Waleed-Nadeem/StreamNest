@@ -41,17 +41,17 @@ const router = createBrowserRouter([
       { path: "/logout", element: <Logout /> },
       { path: "/analytics", element: <Analytics /> },
       { path: "/upload-video", element: <UploadVideo /> },
+      { path: "/home", element: <Home /> },
+      { path: "/home/:video_id", element: <Home /> },
+      { path: "/channel-page/:userId", element: <ChannelPage /> },
+      { path: "/playlists", element: <Playlists /> },
 
       // Protected Routes
       {
         element: <ProtectedRoute />, // Wrap all protected routes
         children: [
-          { path: "/home/:video_id", element: <Home /> },
-          { path: "/home", element: <Home /> },
           { path: "/history", element: <WatchHistory /> },
           { path: "/settings", element: <ChannelSettings /> },
-          { path: "/playlists", element: <Playlists /> },
-          { path: "/channel-page/:userId", element: <ChannelPage /> },
           { path: "/create-playlist", element: <CreatePlaylist /> },
           { path: "/playlist/:playlistId", element: <PlaylistPage /> },
         ],
