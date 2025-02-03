@@ -12,13 +12,17 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://stream-nest-eight.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://stream-nest-eight.vercel.app",
+      "*",
+    ],
     credentials: true,
   })
 );
 
 app.enableCors({
-  origin: "https://stream-nest-eight.vercel.app", // Allow frontend origin
+  origin: ["https://stream-nest-eight.vercel.app", "*"], // Allow frontend origin
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   allowedHeaders: "Content-Type, Authorization",
   credentials: true, // Allow credentials if needed
